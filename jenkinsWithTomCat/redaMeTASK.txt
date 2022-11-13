@@ -58,7 +58,7 @@ I will test it by changing the HTML code on an open-source java app and I will e
       4.8.1)go to root directory ->cd ~
       4.8.2)vim .bash_profile -> go into .bash_profile
       4.8.3) UNDER User specific environment and startup programs 
-        JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.16.0.8-1.amzn2.0.1.x86_64 -> Maven is a javaBased application we need this ->To finde this path-> root level->find /-name jvm -> cd /usr/lib/jvm -> ll -> copy java-11-openjdk...
+        JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.16.0.8-1.amzn2.0.1.x86_64 -> Maven is a javaBased application we need this ->To find this path-> root level->find /-name jvm -> cd /usr/lib/jvm -> ll -> copy java-11-openjdk...
         M2_HOME=/opt/maven
         M2=$M2_HOME/bin
         PATH=$PATH:$HOME/bin:$JAVA_HOME:$M2_HOME:$M2   --> add everything into the "PATH"
@@ -72,14 +72,65 @@ I will test it by changing the HTML code on an open-source java app and I will e
     5.4)Dashboard --> Manage Jenkins --> Global Tool Configuration ->Git ----> It is Complaining because we haven't installed git yet -> Fix is -> yum install git -y
     
     
-  6)Creating a War file
-    6.1)Jenkins GUI ->New item -> Maven Project ->
+  6)Generating a War file
+    6.1)Jenkins GUI ->New item -> Maven Project ->Git ->Repo url:paste it javabased app url , Goals and options:clean install
+        maven lifeclycle commands link :https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html
+    6.2)War file created under /var/lib/jenkins/workspace --> /var/lib/jenkins/workspace/first maven project/webapp/target/webapp.war
+          -> All jenkin jobs always got created under under /var/lib/jenkins/workspace
+      command: cd /var/lib/jenkins/workspace --> you will see all Jenkins jobs
     
+  7) 1 more EC2 was Launched  --> Apache Tomcat is a web container. It allows the users to run Servlet and JAVA Server Pages that are based on the web-applications.
+    7.1)sudo su -
+    7.2)vim /etc/hostname -> press i to insert --> delete whatever inside of it and give what name you want -> press Escape -> :wq Enter(Save it) 
+    7.3)reboot(Reboot restart the instance to make sure the name is changed. It will take a couple of minutes!)
+    7.4)ssh -i ~/Downloads/bastion.pem ec2-user@Public IPv4 address ->again for connecting to EC2   --> NOW, IT IS ec2-user@Tomcat-Server
+  8) Tomcat installed into ec2-user@Tomcat-Server
+    8.2) cd /opt/  --> We have changed our directory to /opt BECAUSE we are doing devops and we use operation directory -> make sure that your directory changed 
+    8.3) wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.68/bin/apache-tomcat-9.0.68.tar.gz
+       link:https://tomcat.apache.org/download-90.cgi  core->tar.gz file taken
+    8.4) tar -xzvf apache-tomcat-9.0.68.tar.gz
+    8.5) rm -Rf apache-tomcat-9.0.68.tar.gz
+    8.6) mv apache-tomcat-9.0.68 tomcat --> this command will create a tomcat folder and apache-tomcat-9.0.68 will move  under the folder
+    8.7) cd tomcat/bin and you will see lots of files --> ll -> you will see startup.sh and shutdown.sh
+    8.8) ./startup.sh is for starting up a tomcat server   -->Will return ->Neither the JAVA_HOME nor the JRE_HOME environment variable is defined . At least one of these environment variable is needed to run this program
+        JAVA NEED TO BE INSTALLED!!!
+    8.9)yum update –y
+    8.10)amazon-linux-extras install java-openjdk11 -y    
     
-    
-    
-    4.11) clean install --> each time job runs it cleans the cache/memory 
-    4.12) in Jenkins VM jobs are stored under /var/lib/jenkins/workspace  
+  9) Click on Manager App —> Access Denied   --> READ THE Documentation!!!
+  10)find / -name context.xml
+     10.1)You will see 2 important files here 1)/opt/tomcat/webapps/host-manager/META-INF/context.xml
+                                              2)/opt/tomcat/webapps/manager/META-INF/context.xml         ->>>> The Other one is "examples" NOT IMPORTANT!
+     10.2)vim /opt/tomcat/webapps/host-manager/META-INF/context.xml  --> go to this file and make changes                                        
+        <!--  <Valve className="org.apache.catalina.valves.RemoteAddrValve" -->Come to This line and with this  <!--      -->    comment it out!
+         allow="127\.\d+\.\d+\.\d+|::1|i0:0:0:0:0:0:0:1" /> -->
+     10.3)vim /opt/tomcat/webapps/manager/META-INF/context.xml    --> Do the same thing in this file too!
+     10.4) cd conf —> vi tomcat-users.xml —> to the end
+    <role rolename="manager-gui"/>
+    <role rolename="manager-script"/>
+    <role rolename="manager-jmx"/>
+    <role rolename="manager-status"/>
+    <user username="admin" password="admin" roles="manager-gui, manager-script, manager-jmx, manager-status"/>
+    <user username="deployer" password="deployer" roles="manager-script"/>
+    <user username="tomcat" password="s3cret" roles="manager-gui"/>
+    </tomcat-users>
+     10.5) cd ../bin —> ./shutdown.sh —> ./startup.sh   ->Click on Manager App -> enter credentials-> Tomcat is Ready Too.
+  
+  11)Jenkins GUI --> Manage Jenkins --> Manage Plugins -> Avaliable->  deploy to container 1.16 (This plugin allows you to deploy a war to a container)
+  12)***Tomcat credentials setup in Jenkins ->Dashboard->Manage Credentials->Click global->Add Credentials
+       -> Kind : UserName with Pass , Scope: Global , Username:deployer (BECAUSE WE SET IT ABOVE) , pass:deployer(BECAUSE WE SET IT ABOVE) , id:tomcat
+       ->Create
+  13)Jenkins GUI --> New Item -> Maven Project ->
+    Git-> Repo Url:Paste the url here
+    Build-> Root.POM:pom.xml , Goals ans options:clean install  
+    Post-build Actions-> Deploy war/ear to a container -> **/*.war (you can click to question mark)
+                      ->Containers: TomCat 8.x Remote , Credentials: You have created above , Tomcat Url:Tomcat Ec2's publicipv4 with tomcat port
+  14)Test your Deployment
+     TomCat-Server's publicIPv4:TomCatPort/webapp/ --> DON"T FORGET webapp!! --> EVERYHING IS GOOD! SUCCESS!!!!                   
 
+
+    
+
+                
 
 
