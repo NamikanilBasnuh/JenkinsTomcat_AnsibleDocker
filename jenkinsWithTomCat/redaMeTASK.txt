@@ -2,9 +2,84 @@
 I will use an open-source JavaBased application to do this action. Once This action is completed. 
 I will test it by changing the HTML code on an open-source java app and I will expect to see the change on Tomcat!
   
-  ## 1 Vpc->IG->Subnet->routeTable->Sg AND -> 2 EC2(VM) will be lauched for Jenkins and TomCat
+  ## 1 Vpc->IGW->Subnet->routeTable->Sg AND -> 2 EC2(VM) will be lauched for Jenkins and TomCat
   ## Maven will be used for building automation tool.
 
   #STEPS
+  
+  1) 1 Vpc->IGW->Subnet->routeTable->Sg AND -> 1 EC2(VM) will be lauched for Jenkins.
+     1.1)vpc and IGW  created and connected to each other. 
+     1.2)Subnet(us-east-1b) Created and Connected to Route Table!
+     1.3)Route table connected to IGW from the edit routes option!
+     1.4)SG created -> MAKE SURE THAT INBOUND RULES WERE SET TO PORT 8080(Jenkins Default), HTTP(80), SSH(22)
+     1.5)AmazonLinux free Tier EC2 launched as "Jenkins"
+     1.6)Testing the Ec2(VM) connection:
+         ssh -i ~/Downloads/bastion.pem ec2-user@Public IPv4 address -> EC2 Connection is COMPLETED!
+     1.7) I want to change the HostName -> I don't want to see ec2-user@ipBLABLA -> Therefore, I need to go back to root and need to change it with command below!
+      1.7.1)sudo su -
+      1.7.2)vim /etc/hostname -> press i to insert --> delete whatever inside of it and give what name you want -> press Escape -> :wq Enter(Save it) 
+      1.7.3)reboot(Reboot restart the instance to make sure the name is changed. It will take a couple of minutes!)
+      1.7.4)ssh -i ~/Downloads/bastion.pem ec2-user@Public IPv4 address ->again for connecting to EC2 -> Now, I am seeing that the "ec2-user@Jenkins-Server" as EC2 name
+  
+  2)I am configuring Jenkins. Jenkins is a Java base application therefore I need to install java into my Ec2(VM). 
+    All Documentation is here :https://www.jenkins.io/doc/tutorials/tutorial-for-installing-jenkins-on-AWS/ 
+    
+    *Make sure that you are a root user to do all below actions (sudo su -)
+    2.1)yum update –y
+        YUM is the primary package management tool for installing, updating, removing, and managing software packages in Red Hat Enterprise Linux.
+    2.2)Add the Jenkins repo using the following command: wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    2.3)Import a key file from Jenkins-CI to enable installation from the package:
+      2.3.1)rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key           -->rpm is REDHAT PACKAGE MANAGER
+      2.3.2)yum upgrade  
+    2.4)Install Java -> command: amazon-linux-extras install java-openjdk11 -y
+    2.5)amazon-linux-extras install epel  (Extra packages enterprise linux)
+    2.6)Install Jenkins-> yum install jenkins -y
+    2.7)Enable the Jenkins service to start at boot -> systemctl enable jenkins
+    2.8)Start Jenkins as a service -> systemctl start jenkins
+    2.9)You can check the status of the Jenkins service using the command -> systemctl status jenkins
+
+  3)Test Jenkins connection -> EC2 Public IPv4 address:8080 -> opened GUI giving you a path(/var/lib/jenkins/secrets/initialAdminPassword) and asking for Administrator password!
+    3.1) Cat /var/lib/jenkins/secrets/initialAdminPassword(GIVING PATH BY JENKINS) -> IT returns an administrator password as a TOKEN -> Copy it from the terminal and past it into Jenkins UI
+    3.2)Create your admin password and username
+
+  4)Configure Maven 
+    4.1) Configure Maven in Jenkins. Maven is a build management tool 
+    4.2) cd /opt ---> We have changed our directory to /opt BECAUSE we are doing devops and we use operation directory -> make sure that your directory changed -> root@Jenkins-Server opt
+    4.3) wget https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz -> we are downlading maven ->Binary tar.gz archive
+        Documentation Link:https://maven.apache.org/download.cgi
+    4.4)After downloaded it. command->ll and it will be seen red color and you will not see "apache-maven-3.8.6" -> meaning that need to bu untar to use it!
+        command:tar -xzvf apache-maven-3.8.6-bin.tar.gz --> unzip(untar) the file
+    4.5) After untar do -> "ll" -> apache-maven-3.8.6 will be seen in blue color means that ready to use it. I delete the untar file now. Because we will not use it anymore.
+       command:rm -Rf apache-maven-3.8.6-bin.tar.gz 
+    4.6) mv apache-maven-3.8.6/ maven   ->this command will create a maven folder and it will move apache-maven-3.8.6 under maven folder
+    4.7) cd ~ --> go to main ROOT ->cd/opt/maven-> mvn -version -> check out maven installed or not. -> NOT INSTALLED BECAUSE I NEED .bash_profile file to install maven
+    4.8) Once maven is placed in the /opt we need to set the maven path in env.variables for that we need to edit the .bash_profile file and add the below lines.
+        link:https://www.techiev.com/2022/07/how-to-install-maven-in-jenkins-linux.html
+      4.8.1)go to root directory ->cd ~
+      4.8.2)vim .bash_profile -> go into .bash_profile
+      4.8.3) UNDER User specific environment and startup programs 
+        JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.16.0.8-1.amzn2.0.1.x86_64 -> Maven is a javaBased application we need this ->To finde this path-> root level->find /-name jvm -> cd /usr/lib/jvm -> ll -> copy java-11-openjdk...
+        M2_HOME=/opt/maven
+        M2=$M2_HOME/bin
+        PATH=$PATH:$HOME/bin:$JAVA_HOME:$M2_HOME:$M2   --> add everything into the "PATH"
+    By configuring .bash_profile and exporting M2_HOME, M2 and JAVA_HOME --> commands can be executed from everywhere. 
+      4.8.4) echo $PATH -> and then-> source .bash_profile -> and then ->echo $PATH --> I see the difference
+  
+  5)Now configure jenkins plugins!!
+    5.1)Jenkins GUI --> Manage Jenkins --> Manage Plugins -->Avaliable -> Maven Integration --> Install without restart 
+    5.2)Dashboard --> Manage Jenkins --> Global Tool Configuration -> find Maven all the way down --> Maven name:maven-3.8.3 ,MAVEN_HOME:/opt/maven ,unclick install automatically ->Apply-SAVE
+    5.3)Dashboard --> Manage Jenkins --> Global Tool Configuration -> JDK -> Add jdk -> Name:java-11 , JAVA_HOME:/usr/lib/jvm/java-11-openjdk-11.0.16.0.8-1.amzn2.0.1.x86_64  (I got this path from 4.8.3) , unclick install automatically ->Apply-SAVE
+    5.4)Dashboard --> Manage Jenkins --> Global Tool Configuration ->Git ----> It is Complaining because we haven't installed git yet -> Fix is -> yum install git -y
+    
+    
+  6)Creating a War file
+    6.1)Jenkins GUI ->New item -> Maven Project ->
+    
+    
+    
+    
+    4.11) clean install --> each time job runs it cleans the cache/memory 
+    4.12) in Jenkins VM jobs are stored under /var/lib/jenkins/workspace  
+
 
 
