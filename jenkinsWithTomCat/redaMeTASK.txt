@@ -142,4 +142,4 @@ To start Jenkins ->sudo systemctl enable jenkins
 ---------------------------------------------------------------------------------------------------------
 To Start TomCat -> ./startup.sh   --> Shut it Down -> ./shutdown.sh    
                 --> THERE WAS A PROBLEM FOR STARTING UP -->ec2-user@Tomcat-Server tomcat -> drwxr-x--- 2 root root  4096 Nov 13 07:38 bin -> reacting like I AM NOT THE OWNER. But giving me "x" permission
-                -> PERMISSON ISSUE -> FIXED BY THIS ->sudo bin/./startup.sh
+                -> PERMISSION ISSUE -> FIXED BY THIS ->sudo bin/./startup.sh
