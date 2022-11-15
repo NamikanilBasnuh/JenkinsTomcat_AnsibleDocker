@@ -118,7 +118,7 @@ I will test it by changing the HTML code on an open-source java app and I will e
   
   11)Jenkins GUI --> Manage Jenkins --> Manage Plugins -> Avaliable->  deploy to container 1.16 (This plugin allows you to deploy a war to a container)
   12)***Tomcat credentials setup in Jenkins ->Dashboard->Manage Credentials->Click global->Add Credentials
-       -> Kind : UserName with Pass , Scope: Global , Username:deployer (BECAUSE WE SET IT ABOVE) , pass:deployer(BECAUSE WE SET IT ABOVE) , id:tomcat
+       -> Kind : UserName with Pass , Scope: Global, Username:deployer (BECAUSE WE SET IT ABOVE) , pass:deployer(BECAUSE WE SET IT ABOVE) , id:tomcat
        ->Create
   13)Jenkins GUI --> New Item -> Maven Project ->
     Git-> Repo Url:Paste the url here
@@ -128,9 +128,18 @@ I will test it by changing the HTML code on an open-source java app and I will e
   14)Test your Deployment
      TomCat-Server's publicIPv4:TomCatPort/webapp/ --> DON"T FORGET webapp!! --> EVERYHING IS GOOD! SUCCESS!!!!                   
 
+------------------------------------------------------------------------------------------------------
 
-    
+Jenkins -> POLL SCM -> Helps to schedule a job (Cron Job) 
+        -> 5 * MUST BE THERE TO trigger it with this format -> * * * * * -> You can set it up any DATE/TIME etc.
+        -> Click the question Mark and read the documentation to do it.
+        -> * * * * * -> Means That you Jenkins will create a War file if any change occurs in codeBase!!!
 
-                
-
-
+--------------------------------------------------------------------------------------------------------
+To start Jenkins ->sudo systemctl enable jenkins
+                 ->sudo systemctl start jenkins
+                 ->systemctl status jenkins -> Make sure that it is active!
+---------------------------------------------------------------------------------------------------------
+To Start TomCat -> ./startup.sh   --> Shut it Down -> ./shutdown.sh    
+                --> THERE WAS A PROBLEM FOR STARTING UP -->ec2-user@Tomcat-Server tomcat -> drwxr-x--- 2 root root  4096 Nov 13 07:38 bin -> reacting like I AM NOT THE OWNER. But giving me "x" permission
+                -> PERMISSON ISSUE -> FIXED BY THIS ->sudo bin/./startup.sh
